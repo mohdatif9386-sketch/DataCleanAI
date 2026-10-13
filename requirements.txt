@@ -1,0 +1,15 @@
+# Core app
+streamlit
+pandas
+numpy
+openpyxl
+
+# Interactive dashboard and downloadable reports
+plotly
+reportlab
+
+# AI integration and environment configuration (used in Step 11)
+openai
+python-dotenv
+
+google-genai
