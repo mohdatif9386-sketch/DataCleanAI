@@ -373,3 +373,61 @@ def standardize_text_column(df, column, method="title"):
 
     cleaned_df[column] = values
     return cleaned_df
+
+
+def handle_outliers(df, column, method="median"):
+    """Handle outliers using the IQR method."""
+    result_df = df.copy()
+
+    if column not in result_df.columns:
+        raise ValueError(f"Column '{column}' does not exist.")
+
+    if not pd.api.types.is_numeric_dtype(result_df[column]):
+        raise TypeError("Outlier handling requires a numeric column.")
+
+    values = result_df[column].dropna()
+
+    if len(values) < 4 or values.nunique() <= 1:
+        raise ValueError("Not enough numeric variation to detect outliers.")
+
+    q1 = values.quantile(0.25)
+    q3 = values.quantile(0.75)
+    iqr = q3 - q1
+
+    if iqr == 0:
+        raise ValueError("IQR is zero; outliers cannot be identified reliably.")
+
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+
+    outlier_mask = (
+        (result_df[column] < lower) |
+        (result_df[column] > upper)
+    )
+
+    if method == "median":
+        median_value = values.median()
+
+        if pd.api.types.is_integer_dtype(result_df[column].dtype):
+            result_df[column] = result_df[column].astype("float64")
+
+        result_df.loc[outlier_mask, column] = median_value
+
+    elif method == "remove":
+        result_df = result_df.loc[~outlier_mask].copy()
+
+    elif method == "cap":
+        result_df[column] = result_df[column].clip(
+            lower=lower,
+            upper=upper
+        )
+
+    elif method == "keep":
+        pass
+
+    else:
+        raise ValueError(
+            "Invalid method. Choose: 'median', 'remove', 'cap', or 'keep'."
+        )
+
+    return result_df

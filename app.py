@@ -48,6 +48,7 @@ from data_cleaner import (
     handle_missing_values,
     convert_column_type,
     check_data_quality,
+    handle_outliers,
     generate_data_advice,
     detect_column_types,
     calculate_data_quality_score,
@@ -356,6 +357,57 @@ try:
         else:
             st.warning(f"{len(quality_report)} types of data quality issues detected.")
             st.dataframe(quality_report, use_container_width=True)
+
+    
+    # Outlier Handling
+    st.divider()
+    st.subheader("📊 Outlier Handling")
+
+    current_df = st.session_state.cleaned_df
+
+    numeric_columns = current_df.select_dtypes(
+        include="number"
+    ).columns.tolist()
+
+    if not numeric_columns:
+        st.info("No numeric columns available for outlier handling.")
+    else:
+        outlier_column = st.selectbox(
+            "Select numeric column",
+            numeric_columns,
+            key="outlier_column"
+        )
+
+        outlier_method = st.selectbox(
+            "Choose handling method",
+            ["median", "remove", "cap", "keep"],
+            format_func=lambda method: {
+                "median": "Replace with Median",
+                "remove": "Remove Outlier Rows",
+                "cap": "Cap at IQR Limits",
+                "keep": "Keep Original Values"
+            }[method],
+            key="outlier_method"
+        )
+
+        if st.button("Apply Outlier Handling"):
+            try:
+                updated_df = handle_outliers(
+                    current_df,
+                    outlier_column,
+                    outlier_method
+                )
+
+                st.session_state.cleaned_df = updated_df
+
+                st.success("Outlier handling applied successfully!")
+                st.dataframe(
+                    updated_df,
+                    use_container_width=True
+                )
+
+            except (ValueError, TypeError) as e:
+                st.error(str(e))
     
     # Gemini AI Advice
     st.divider()
